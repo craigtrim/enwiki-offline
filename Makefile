@@ -17,8 +17,8 @@ copy_setup:
 
 install:
 	@echo Installing Microservice
-	poetry check
 	poetry lock
+	poetry check
 	poetry update
 	poetry install
 	poetry run pre-commit install

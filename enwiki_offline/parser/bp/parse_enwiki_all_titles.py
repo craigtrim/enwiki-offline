@@ -2,118 +2,89 @@
 """ Parse the EnWiki all-titles File """
 
 
-import os
+from collections import Counter
+from typing import Dict, Iterator
 
-from typing import Optional
+from baseblock import FileIO
 
-from cryptography.fernet import Fernet
-from cryptography.fernet import InvalidToken
-
-enc = 'utf-8'
+from enwiki_offline.parser.dto import calculate_md5
 
 
 class ParseEnwikiAllTitles(object):
     """ Parse the EnWiki all-titles File """
 
-    def __init__(self,
-                 crypto_key: Optional[str] = None):
+    def __init__(self):
         """ Change Log
 
         Created:
             9-Apr-2024
             craigtrim@gmail.com
         """
+        self._output_path = FileIO.join_cwd('resources/enwiki')
+        FileIO.exists_or_error(self._output_path)
 
     @staticmethod
-    def generate_private_key() -> str:
-        """ Use to Generate Private Key for ecrypting and decrypting text
-        This key will be passed in as a value to the constructor of CryptoBase
-
-        Returns:
-            str: the private key
+    def _read_file(file_path: str) -> Iterator[str]:
         """
-        return Fernet.generate_key()
-
-    def encrypt_str(self,
-                    some_input: str) -> str:
-        """ Encrypt a String
+        Reads a large file line by line and yields each line.
 
         Args:
-            some_input (str): any input string
+            file_path (str): The path to the file to be read.
 
-        Returns:
-            str: the encrypted string
+        Yields:
+            str: Each line of the file.
+
         """
-        result = str(self.encrypt(some_input.encode(enc)))
+        with open(file_path, 'r', encoding='utf-8') as file:
+            for line in file:
+                yield line
 
-        # eliminate the 'bytes' prefix and suffix markers
-        if result.startswith("b'") and result.endswith("'"):
-            return result[2:-1]
+    @staticmethod
+    def _write_file(ch2: str, c: Counter) -> None:
+        pass
 
-        return result
+    def process(self, input_path: str) -> None:
 
-    def encrypt(self,
-                message: bytes) -> str:
-        """ Encrypt Bytes
+        c: Counter = Counter()
+        prior_ch2 = None
 
-        Args:
-            message (bytes): any input bytes
+        i = 0
 
-        Returns:
-            str: the encrypted string
-        """
-        f = Fernet(self._key)
-        return str(f.encrypt(message))
+        for line in self._read_file(input_path):
+            if not line or not len(line):
+                break
 
-    def decrypt_str(self,
-                    some_input: str) -> str or None:
-        """ Decrypt a String
+            tokens = line.split('\t')
+            if not tokens or not len(tokens) == 2:
+                continue
 
-        Args:
-            some_input (str): any input string
+            title: str = tokens[1].strip()
+            if title == 'page_title':
+                continue
 
-        Raises:
-            ValueError: the encrypted token is invalid
+            if len(title) < 3:
+                continue
 
-        Returns:
-            str or None: the decrypted string if the encrypted token is valid
-        """
-        return self.decrypt(some_input.encode(enc))
+            if not title[:2].isalpha():
+                continue
 
-    def decrypt(self,
-                message: bytes) -> str:
-        """ Decrypt Bytes
+            if '_' in title:
+                title = title.replace('_', ' ')
 
-        Args:
-            message (bytes): any input bytes
+            ch2 = title[:2].lower()
 
-        Raises:
-            ValueError: the encrypted token is invalid
+            if not prior_ch2:
+                prior_ch2 = ch2
+                print(f"initialize prior-ch2={ch2}")
 
-        Returns:
-            str: the decrypted string
-        """
-        try:
-            f = Fernet(self._key)
-            return f.decrypt(message).decode(enc)
-        except InvalidToken:
-            raise ValueError('Invalid Token')
+            if ch2 != prior_ch2:
+                print(f"ch2={prior_ch2} = {len(c)}")
+                prior_ch2 = ch2
+                print(f"reset prior-ch2={prior_ch2}")
+                c = Counter()
 
+            c.update({title, 1})
 
-def main(param1, param2):
-    def _action():
-        if param1 == 'encrypt':
-            return CryptoBase().encrypt_str(param2)
-        elif param1 == 'decrypt':
-            return CryptoBase().decrypt_str(param2)
-        else:
-            raise NotImplementedError('\n'.join([
-                'Unknown Param: {}'.format(param1)]))
-
-    print(_action())
-
-
-if __name__ == '__main__':
-    import plac
-
-    plac.call(main)
+            i += 1
+            if i > 50000:
+                break

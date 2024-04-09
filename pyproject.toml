@@ -20,6 +20,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.11.5"
 baseblock = "*"
+dvc = "*"
 
 [tool.poetry.dev-dependencies]
 autopep8 = "*"
