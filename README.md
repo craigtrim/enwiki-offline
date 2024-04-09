@@ -7,11 +7,6 @@ def exists(entity: str) -> bool
 Performs a case insensitive search and returns True if a Wikipedia entry exists for the input entity.  Synonyms, Partial and Fuzzy searches are not supported.  Exact matches only.
 
 ```python
-def title(entity: str) -> Optional[str]
-```
-Similar to `exists(...)` but returns a Wikipedia Title (if the entity exists)
-
-```python
 def is_ambiguous(entity: str) -> bool
 ```
 Returns True if multiple Wikipedia entries exist for this term.

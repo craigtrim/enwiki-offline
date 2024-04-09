@@ -89,7 +89,9 @@ class EnwikiOfflineAPI(BaseObject):
         indicating ambiguity. If the entity does not exist or is associated with a single
         entry only, the method returns False.
         """
+
         if self.exists(entity):
+            entity = entity.lower().strip()
             return len(self._get_file(entity=entity)[entity]) > 1
 
         return False
@@ -119,9 +121,11 @@ class EnwikiOfflineAPI(BaseObject):
         Wikipedia page associated with the entity. If no entries are found for the
         entity, the method returns None.
         """
+
         if not self.exists(entity):
             return None
 
+        entity = entity.lower().strip()
         values: List[str] = self._get_file(entity=entity)[entity]
         return [
             f"https://en.wikipedia.org/wiki/{value.replace(' ', '_')}"

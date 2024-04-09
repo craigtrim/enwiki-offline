@@ -1,3 +1,1 @@
-from .bp import *
-from .dmo import *
-from .svc import *
+from .enwiki_offline_api import EnwikiOfflineAPI
