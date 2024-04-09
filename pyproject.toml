@@ -7,7 +7,7 @@ description = "Offline Access to Enwiki Entities"
 license = "MIT"
 name = "enwiki-offline"
 readme = "README.md"
-version = "0.2.25"
+version = "0.2.26"
 
 keywords = ["utility", "helper", "text", "matching"]
 repository = "https://github.com/craigtrim/enwiki-offline"
