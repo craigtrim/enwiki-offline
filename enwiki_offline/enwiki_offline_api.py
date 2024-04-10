@@ -6,8 +6,8 @@ import logging
 from functools import lru_cache
 from typing import List, Optional
 
-from enwiki_offline.file_io import (exists, exists_or_error, join, join_cwd,
-                                    read_json)
+from enwiki_offline.utils import (calculate_md5, exists, exists_or_error, join,
+                                  join_cwd, read_json, read_string)
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -27,18 +27,40 @@ class EnwikiOfflineAPI(object):
         self._output_path = join_cwd('resources/enwiki')
         exists_or_error(self._output_path)
 
-    @lru_cache(maxsize=5192)
-    def _get_file(self, entity: str) -> Optional[dict]:
+    # @lru_cache(maxsize=5192)
+    # def _get_file(self, entity: str) -> Optional[dict]:
 
-        ch_path = join(self._output_path, entity[0], entity[:2])
-        if not exists(ch_path):
-            return None
+    #     ch_path = join(self._output_path, entity[0], entity[:2])
+    #     if not exists(ch_path):
+    #         return None
 
-        file_path = join(ch_path, f"{entity[:3]}.json")
-        if not exists(file_path):
-            return None
+    #     file_path = join(ch_path, f"{entity[:3]}.json")
+    #     if not exists(file_path):
+    #         return None
 
-        return read_json(file_path)
+    #     return read_json(file_path)
+
+    @lru_cache(maxsize=256)  # 16^2 variations
+    def _read_file(self, prefix: str) -> None:
+        """
+        Writes the given dictionary `d` to a JSON file with the name `ch2` in the appropriate directory.
+
+        Args:
+            ch2 (str): The name of the file to be written.
+            d (dict): The dictionary to be written to the file.
+
+        Returns:
+            None
+        """
+
+        def read(file_type: str) -> List[str]:
+            ch_path = join(self._output_path, file_type)
+            if not exists(ch_path):
+                return None
+            file_path = join(ch_path, f"{prefix}.txt")
+            return read_string(file_path).split(' ')
+
+        return read('ambiguous'), read('unambiguous')
 
     @lru_cache(maxsize=2048, typed=False)
     def exists(self, entity: str) -> bool:
@@ -69,7 +91,13 @@ class EnwikiOfflineAPI(object):
         if len(entity) < 4:
             return False
 
-        return entity in self._get_file(entity=entity)
+        md5 = calculate_md5(entity)
+        ambiguous, unambiguous = self._read_file(md5[:2])
+
+        if entity in ambiguous:
+            return True
+
+        return md5[2:] in unambiguous
 
     @lru_cache(maxsize=2048, typed=False)
     def is_ambiguous(self, entity: str) -> bool:
@@ -95,44 +123,10 @@ class EnwikiOfflineAPI(object):
         entry only, the method returns False.
         """
 
-        if self.exists(entity):
-            entity = entity.lower().strip()
-            return len(self._get_file(entity=entity)[entity]) > 1
-
-        return False
-
-    @lru_cache(maxsize=2048, typed=False)
-    def titles(self, entity: str) -> Optional[List[str]]:
-        """
-        Retrieves all Wikipedia titles associated with the given entity and formats
-        them as fully qualified URLs to their respective Wikipedia pages. If the
-        entity does not exist (i.e., no Wikipedia entry can be found for the given
-        term), the method returns None.
-
-        This method first checks for the existence of the entity in Wikipedia. If
-        the entity is found, it retrieves the list of titles associated with this
-        entity. Each title is then transformed into a URL pointing to the Wikipedia
-        page for that title. The transformation involves replacing spaces in the
-        title with underscores (as is standard in Wikipedia URLs) and prefixing the
-        title with the base URL for English Wikipedia pages.
-
-        Parameters:
-        - entity (str): The name of the entity for which Wikipedia titles are to be
-        retrieved. This is a string representing the term or name used to look up
-        Wikipedia entries.
-
-        Returns:
-        - Optional[List[str]]: A list of strings, each a fully qualified URL to a
-        Wikipedia page associated with the entity. If no entries are found for the
-        entity, the method returns None.
-        """
-
-        if not self.exists(entity):
-            return None
-
         entity = entity.lower().strip()
-        values: List[str] = self._get_file(entity=entity)[entity]
-        return [
-            f"https://en.wikipedia.org/wiki/{value.replace(' ', '_')}"
-            for value in values
-        ]
+        if len(entity) < 4:
+            return False
+
+        md5 = calculate_md5(entity)
+        ambiguous, _ = self._read_file(md5[:2])
+        return md5[:2] in ambiguous

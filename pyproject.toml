@@ -42,7 +42,8 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.8, <4.0"
-dvc = "*"
+pyarrow = "*"
+pandas = "*"
 
 [tool.poetry.dev-dependencies]
 autopep8 = "*"

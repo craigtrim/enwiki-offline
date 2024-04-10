@@ -5,9 +5,13 @@
 from collections import defaultdict
 from copy import deepcopy
 from json import dump
-from typing import Iterator
+from typing import Iterator, List
 
-from baseblock import BaseObject, FileIO, Stopwatch
+from baseblock import BaseObject, Stopwatch
+
+from enwiki_offline.utils import (calculate_md5, exists, exists_or_create,
+                                  exists_or_error, join, join_cwd,
+                                  write_string)
 
 
 class ParseEnwikiAllTitles(BaseObject):
@@ -43,8 +47,8 @@ class ParseEnwikiAllTitles(BaseObject):
             craigtrim@gmail.com
         """
         BaseObject.__init__(self, __name__)
-        self._output_path = FileIO.join_cwd('resources/enwiki')
-        FileIO.exists_or_error(self._output_path)
+        self._output_path = join_cwd('resources/enwiki')
+        exists_or_error(self._output_path)
 
     @staticmethod
     def _read_file(file_path: str) -> Iterator[str]:
@@ -62,7 +66,7 @@ class ParseEnwikiAllTitles(BaseObject):
             for line in file:
                 yield line
 
-    def _write_file(self, ch3: str, d: dict) -> None:
+    def _write_file(self, prefix_1: str, type: str, values: List[str]) -> None:
         """
         Writes the given dictionary `d` to a JSON file with the name `ch2` in the appropriate directory.
 
@@ -73,10 +77,10 @@ class ParseEnwikiAllTitles(BaseObject):
         Returns:
             None
         """
-        ch_path = FileIO.join(self._output_path, ch3[0], ch3[:2])
-        FileIO.exists_or_create(ch_path)
-        file_path = FileIO.join(ch_path, f"{ch3}.json")
-        FileIO.write_json(data=d, file_path=file_path)
+        ch_path = join(self._output_path, type)
+        exists_or_create(ch_path)
+        file_path = join(ch_path, f"{prefix_1}.txt")
+        write_string(input_text=' '.join(values), file_path=file_path)
 
     @staticmethod
     def _normalize_title(title: str) -> str | None:
@@ -136,7 +140,7 @@ class ParseEnwikiAllTitles(BaseObject):
         # can't guarantee the sort order of the iput file
         # so it has to be loaded into a dictionary first
         # approx 23,250,000 lines in 2-3 minutes
-        d = defaultdict()
+        d_entities = defaultdict(list)
 
         for line in self._read_file(input_path):
 
@@ -153,15 +157,7 @@ class ParseEnwikiAllTitles(BaseObject):
             if not title or not len(title):
                 continue
 
-            ch3 = title[:3].lower()
-            if not all(c.isalpha() and 'a' <= c <= 'z' for c in ch3):
-                continue
-
-            if ch3 not in d:
-                d[ch3] = defaultdict(list)
-
-            if not any(s.lower() == original_title.lower() for s in d[ch3][title]):
-                d[ch3][title].append(original_title)
+            d_entities[title].append(original_title)
 
             if i == 0:
                 self.logger.info(f"Starting ~26 million lines in 2-3 minutes")
@@ -171,10 +167,37 @@ class ParseEnwikiAllTitles(BaseObject):
             i += 1
 
         self.logger.info(
-            f"Finished Loading Dictionary in {str(sw)} with {len(d)} elements")
+            f"Finished Loading Dictionary in {str(sw)} with {len(d_entities)} elements")
 
-        for ch3 in d:
-            self._write_file(ch3=ch3, d=dict(d[ch3]))
+        ambiguous_entities: List[str] = []
+        unambiguous_entities: List[str] = []
+
+        def bucket(entity: str) -> None:
+            if len(d_entities[entity]) > 1:
+                ambiguous_entities.append(entity)
+            else:
+                unambiguous_entities.append(entity)
+
+        [
+            bucket(entity) for entity in d_entities
+        ]
+
+        d_md5 = defaultdict(set)
+
+        def to_md5(entities: List[str], type: str) -> None:
+
+            for entity in entities:
+                md5 = calculate_md5(entity)
+                if md5[:2] not in d_md5:
+                    d_md5[md5[:2]] = []
+                d_md5[md5[:2]].append(md5[2:])
+
+            for prefix_1 in d_md5:
+                self._write_file(prefix_1=prefix_1, type=type,
+                                 values=d_md5[prefix_1])
+
+        to_md5(entities=ambiguous_entities, type="ambiguous")
+        to_md5(entities=unambiguous_entities, type="unambiguous")
 
 
 def main(input_path):
