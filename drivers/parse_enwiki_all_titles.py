@@ -122,16 +122,7 @@ class ParseEnwikiAllTitles(BaseObject):
 
         return title
 
-    def process(self, input_path: str) -> None:
-        """
-        Process the input file and generate a dictionary of titles.
-
-        Args:
-            input_path (str): The path to the input file.
-
-        Returns:
-            None
-        """
+    def _to_dict(self, input_path: str) -> dict:
 
         # for status logging
         i = 0
@@ -140,7 +131,7 @@ class ParseEnwikiAllTitles(BaseObject):
         # can't guarantee the sort order of the iput file
         # so it has to be loaded into a dictionary first
         # approx 23,250,000 lines in 2-3 minutes
-        d_entities = defaultdict(list)
+        d_entities = defaultdict(set)
 
         for line in self._read_file(input_path):
 
@@ -157,7 +148,14 @@ class ParseEnwikiAllTitles(BaseObject):
             if not title or not len(title):
                 continue
 
-            d_entities[title].append(original_title)
+            d_entities[title].add(original_title)
+
+            if 'john_kao' in title or 'john_kao' in original_title:
+                print(title, " / ", original_title)
+                print()
+            if 'john kao' in title or 'john kao' in original_title:
+                print(title, " / ", original_title)
+                print()
 
             if i == 0:
                 self.logger.info(f"Starting ~26 million lines in 2-3 minutes")
@@ -169,35 +167,57 @@ class ParseEnwikiAllTitles(BaseObject):
         self.logger.info(
             f"Finished Loading Dictionary in {str(sw)} with {len(d_entities)} elements")
 
+        return dict(d_entities)
+
+    def _to_md5_dict(self, entities: List[str]) -> dict:
+
+        d_md5 = {}
+
+        for entity in entities:
+            md5 = calculate_md5(entity)
+            if md5[:2] not in d_md5:
+                d_md5[md5[:2]] = set()
+            d_md5[md5[:2]].add(md5[2:])
+
+        return dict(d_md5)
+
+    def process(self, input_path: str) -> None:
+        """
+        Process the input file and generate a dictionary of titles.
+
+        Args:
+            input_path (str): The path to the input file.
+
+        Returns:
+            None
+        """
+
+        d_entities = self._to_dict(input_path)
+
+        print(d_entities['john kao'])
+
         ambiguous_entities: List[str] = []
         unambiguous_entities: List[str] = []
 
-        def bucket(entity: str) -> None:
+        for entity in d_entities:
             if len(d_entities[entity]) > 1:
                 ambiguous_entities.append(entity)
             else:
                 unambiguous_entities.append(entity)
 
-        [
-            bucket(entity) for entity in d_entities
-        ]
+        # print (ambiguous_entities)
+        # print()
+        # print (unambiguous_entities)
 
-        d_md5 = defaultdict(set)
+        d_md5_ambiguous = self._to_md5_dict(ambiguous_entities)
+        for prefix_1 in d_md5_ambiguous:
+            self._write_file(prefix_1=prefix_1, type="ambiguous",
+                             values=d_md5_ambiguous[prefix_1])
 
-        def to_md5(entities: List[str], type: str) -> None:
-
-            for entity in entities:
-                md5 = calculate_md5(entity)
-                if md5[:2] not in d_md5:
-                    d_md5[md5[:2]] = []
-                d_md5[md5[:2]].append(md5[2:])
-
-            for prefix_1 in d_md5:
-                self._write_file(prefix_1=prefix_1, type=type,
-                                 values=d_md5[prefix_1])
-
-        to_md5(entities=ambiguous_entities, type="ambiguous")
-        to_md5(entities=unambiguous_entities, type="unambiguous")
+        d_md5_unambiguous = self._to_md5_dict(unambiguous_entities)
+        for prefix_1 in d_md5_unambiguous:
+            self._write_file(prefix_1=prefix_1, type="unambiguous",
+                             values=d_md5_unambiguous[prefix_1])
 
 
 def main(input_path):

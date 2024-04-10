@@ -6,7 +6,7 @@ description = "High-performance offline access to Wikipedia data for Linked Data
 license = "MIT"
 name = "enwiki-offline"
 readme = "README.md"
-version = "0.2.27"
+version = "0.1.10"
 
 keywords = [
   "utility",

@@ -129,4 +129,4 @@ class EnwikiOfflineAPI(object):
 
         md5 = calculate_md5(entity)
         ambiguous, _ = self._read_file(md5[:2])
-        return md5[:2] in ambiguous
+        return md5[2:] in ambiguous
