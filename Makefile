@@ -25,7 +25,8 @@ all:
 	make freeze
 
 # ----------------------------------------------------------------
-# (Optional) Linting -- Compatible with Python 3.9+
+# (Optional) 	Linting
+#				Compatible with Python 3.9 and higher
 #
 activate:
 	poetry run pre-commit autoupdate
@@ -33,4 +34,14 @@ activate:
 
 linters:
 	poetry run pre-commit run --all-files
+# ----------------------------------------------------------------
+
+
+# ----------------------------------------------------------------
+# (Optional) 	Machine Specific Commands
+#				These Commands can be modified for local environments
+#
+parse:
+	mkdir -p resources/enwiki
+	poetry run python drivers/parse_enwiki_all_titles.py /Users/craigtrim/Desktop/enwiki-20240301-all-titles
 # ----------------------------------------------------------------

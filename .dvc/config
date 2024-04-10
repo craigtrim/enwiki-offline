@@ -1,6 +1,5 @@
 [core]
-    remote = enwiki_storage
-    autostage = true
-['remote "enwiki_storage"']
-    url = s3://enwikioffline
+    remote = myremote
+['remote "myremote"']
+    url = s3://enwikilookup
     profile = enwiki_offline
