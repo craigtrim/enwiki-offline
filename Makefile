@@ -3,7 +3,6 @@
 # ----------------------------------------------------------------
 
 install:
-	@echo Installing Microservice
 	poetry lock
 	poetry check
 	poetry update
