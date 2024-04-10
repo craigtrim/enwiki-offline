@@ -1,18 +1,5 @@
 # ----------------------------------------------------------------
-# baseblock
-# ----------------------------------------------------------------
-
-ifeq ($(OS),Windows_NT)
-    os_shell := powershell
-	copy_setup := resources/scripts/copy_setup.ps1
-else
-    os_shell := $(SHELL)
-	copy_setup := resources/scripts/copy_setup.sh
-endif
-
-copy_setup:
-	$(os_shell) $(copy_setup)
-
+# enwiki-local
 # ----------------------------------------------------------------
 
 install:
@@ -21,14 +8,9 @@ install:
 	poetry check
 	poetry update
 	poetry install
-	poetry run pre-commit install
-
-activate:
-	@echo Activating Microservice
-	poetry run pre-commit autoupdate
 
 test:
-	echo Unit Testing Microservice
+	@echo Unit Testing Microservice
 	poetry run pytest --disable-pytest-warnings
 
 build:
@@ -36,13 +18,6 @@ build:
 	make install
 	make test
 	poetry build
-	make copy_setup
-
-linters:
-	@echo Running Linters
-	poetry run pre-commit run --all-files
-#	20230116; breaks on cartesian-* methods
-#	poetry run flakeheaven lint
 
 freeze:
 	@echo Freezing Requirements
@@ -51,6 +26,17 @@ freeze:
 
 all:
 	make build
-	make linters
 	make freeze
-	make copy_setup
+
+# ----------------------------------------------------------------
+# (Optional) Linting -- Compatible with Python 3.9+
+#
+activate:
+	@echo Activating Microservice
+	poetry run pre-commit autoupdate
+	poetry run pre-commit install
+
+linters:
+	@echo Running Linters
+	poetry run pre-commit run --all-files
+# ----------------------------------------------------------------

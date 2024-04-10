@@ -1,25 +1,47 @@
 [tool.poetry]
 authors = ["Craig Trim <craigtrim@gmail.com>"]
-
 maintainers = ["Craig Trim <craigtrim@gmail.com>"]
 
-description = "Offline Access to Enwiki Entities"
+description = "High-performance offline access to Wikipedia data for Linked Data / NLP applications."
 license = "MIT"
 name = "enwiki-offline"
 readme = "README.md"
-version = "0.2.26"
+version = "0.2.27"
 
-keywords = ["utility", "helper", "text", "matching"]
+keywords = [
+  "utility",
+  "helper",
+  "text",
+  "matching",
+  "wikipedia",
+  "offline access",
+  "NLP",
+  "linked data",
+  "data science",
+  "information retrieval",
+]
+
 repository = "https://github.com/craigtrim/enwiki-offline"
 
 classifiers = [
   "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
   "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Text Processing",
+  "Topic :: Text Processing :: Linguistic",
+  "Topic :: Database",
+  "Topic :: Scientific/Engineering :: Information Analysis",
 ]
 
 [tool.poetry.dependencies]
-python = "^3.11.5"
-baseblock = "*"
+python = ">=3.8, <4.0"
 dvc = "*"
 
 [tool.poetry.dev-dependencies]

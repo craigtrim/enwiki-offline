@@ -2,13 +2,19 @@
 """ Parse the EnWiki all-titles File """
 
 
+import logging
 from functools import lru_cache
 from typing import List, Optional
 
-from baseblock import BaseObject, FileIO
+from enwiki_offline.file_io import (exists, exists_or_error, join, join_cwd,
+                                    read_json)
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 
-class EnwikiOfflineAPI(BaseObject):
+class EnwikiOfflineAPI(object):
 
     def __init__(self):
         """ Change Log
@@ -18,22 +24,21 @@ class EnwikiOfflineAPI(BaseObject):
             craigtrim@gmail.com
             *   https://github.com/craigtrim/enwiki-offline/issues/1
         """
-        BaseObject.__init__(self, __name__)
-        self._output_path = FileIO.join_cwd('resources/enwiki')
-        FileIO.exists_or_error(self._output_path)
+        self._output_path = join_cwd('resources/enwiki')
+        exists_or_error(self._output_path)
 
     @lru_cache(maxsize=5192)
     def _get_file(self, entity: str) -> Optional[dict]:
 
-        ch_path = FileIO.join(self._output_path, entity[0], entity[:2])
-        if not FileIO.exists(ch_path):
+        ch_path = join(self._output_path, entity[0], entity[:2])
+        if not exists(ch_path):
             return None
 
-        file_path = FileIO.join(ch_path, f"{entity[:3]}.json")
-        if not FileIO.exists(file_path):
+        file_path = join(ch_path, f"{entity[:3]}.json")
+        if not exists(file_path):
             return None
 
-        return FileIO.read_json(file_path)
+        return read_json(file_path)
 
     @lru_cache(maxsize=2048, typed=False)
     def exists(self, entity: str) -> bool:
